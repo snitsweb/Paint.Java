@@ -3,6 +3,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.geom.AffineTransform;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.ObjectOutputStream;
@@ -13,15 +14,19 @@ import java.util.ArrayList;
 import java.io.File;
 
 
-/** Klassa jako panel do rysowania */
-public class DrawingPanel extends JPanel implements ActionListener{
+/**
+ * Klassa jako panel do rysowania
+ */
+public class DrawingPanel extends JPanel implements ActionListener {
 
-    /** Zmienna do wybierania typu działania
+    /**
+     * Zmienna do wybierania typu działania
      * 1 - koło
      * 2 - prostokąt
      * 3 - trójkąt
      * 4 - modyfikacja
-     * */
+     * 5 - rotate
+     */
 
     public int mode;
     public Popup popup;
@@ -29,40 +34,48 @@ public class DrawingPanel extends JPanel implements ActionListener{
     private ArrayList<OneShape> shapes = new ArrayList<OneShape>();
     private int shapeNum = 0;
 
-    /** Obsługa kliknięć */
+    /**
+     * Obsługa kliknięć
+     */
     MoveCreateAdapter moveCreateAdapter;
 
-    /** Obsługa scrolla*/
+    /**
+     * Obsługa scrolla
+     */
     ScalingAdapter scalingAdapter;
     ActionListener popupListener;
-    String path = "./rysunek.dat";
-    JFileChooser jFileChooser = new JFileChooser(new File("."));
 
-    /** Konstruktor DrawingPanel */
+    /**
+     * Konstruktor DrawingPanel
+     */
     public DrawingPanel() {
         initUI();
     }
-    /** Funckja dla tworżenia Panelu */
+
+    /**
+     * Funckja dla tworżenia Panelu
+     */
     private void initUI() {
         popup = new Popup();
         popupListener = new ActionListener() {
             Color color = Color.BLACK;
+
             public void actionPerformed(ActionEvent e) {
-                if(e.getActionCommand().equals("Blue")){
+                if (e.getActionCommand().equals("Blue")) {
                     color = Color.BLUE;
-                } else if(e.getActionCommand().equals("Red")){
+                } else if (e.getActionCommand().equals("Red")) {
                     color = Color.RED;
-                } else if(e.getActionCommand().equals("Yellow")){
+                } else if (e.getActionCommand().equals("Yellow")) {
                     color = Color.YELLOW;
-                } else if(e.getActionCommand().equals("Pink")){
+                } else if (e.getActionCommand().equals("Pink")) {
                     color = Color.PINK;
-                } else if(e.getActionCommand().equals("Green")){
+                } else if (e.getActionCommand().equals("Green")) {
                     color = Color.GREEN;
-                } else if(e.getActionCommand().equals("Orange")){
+                } else if (e.getActionCommand().equals("Orange")) {
                     color = Color.ORANGE;
                 }
 
-                switch (shapes.get(popup.selected).type){
+                switch (shapes.get(popup.selected).type) {
                     case RECTANGLE:
                         shapes.get(popup.selected).rectangle.color = color;
                         repaint();
@@ -84,10 +97,9 @@ public class DrawingPanel extends JPanel implements ActionListener{
         };
 
 
-
-        String[] colors  = new String[] {"Red", "Yellow", "Pink", "Green", "Orange"};
+        String[] colors = new String[]{"Red", "Yellow", "Pink", "Green", "Orange"};
         JMenuItem item;
-        for(int i = 0; i < colors.length; i++) {
+        for (int i = 0; i < colors.length; i++) {
             item = new JMenuItem(colors[i]);
             item.setHorizontalTextPosition(JMenuItem.LEFT);
             item.addActionListener(popupListener);
@@ -101,13 +113,21 @@ public class DrawingPanel extends JPanel implements ActionListener{
         addMouseWheelListener(scalingAdapter);
     }
 
-    /** Funkcja do rysowania figur */
+    /**
+     * Funkcja do rysowania figur
+     */
     private void doDrawing(Graphics g) {
         Graphics2D graphics2D = (Graphics2D) g;
-        for(int i = 0; i < shapeNum; i++) {
-
+        System.out.println("DoDrawing");
+        for (int i = 0; i < shapeNum; i++) {
+            AffineTransform old = graphics2D.getTransform();
             switch (shapes.get(i).type) {
                 case RECTANGLE:
+                    if (shapes.get(i).rectangle.rotateDegres != 0) {
+                        graphics2D.translate(shapes.get(i).rectangle.x, shapes.get(i).rectangle.y);
+                        graphics2D.rotate(Math.toRadians(shapes.get(i).rectangle.rotateDegres));
+                        graphics2D.translate(-(shapes.get(i).rectangle.x) - shapes.get(i).rectangle.width, -(shapes.get(i).rectangle.y) - shapes.get(i).rectangle.height);
+                    }
                     graphics2D.setPaint(shapes.get(i).rectangle.color);
                     graphics2D.fill(shapes.get(i).rectangle);
                     break;
@@ -118,6 +138,10 @@ public class DrawingPanel extends JPanel implements ActionListener{
                     break;
 
                 case TRIANGLE:
+                    if(shapes.get(i).triangle.rotateDegres != 0){
+                        graphics2D.translate(shapes.get(i).triangle.points[0][0], shapes.get(i).triangle.points[0][1]);
+                        graphics2D.rotate(Math.toRadians(shapes.get(i).triangle.rotateDegres));
+                    }
                     shapes.get(i).triangle.make();
                     graphics2D.setPaint(shapes.get(i).triangle.color);
                     graphics2D.draw(shapes.get(i).triangle.trojkat);
@@ -127,31 +151,59 @@ public class DrawingPanel extends JPanel implements ActionListener{
                 default:
                     break;
             }
+
+            graphics2D.setTransform(old);
         }
     }
 
-    /** Dodanie to standartowej metody i dodanie DoDrawing */
+    /**
+     * Dodanie to standartowej metody i dodanie DoDrawing
+     */
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
         doDrawing(g);
     }
 
-    /** Klasa do modyfikacji i tworzenia figur */
+    public void rotateShape(OneShape shape, int i) {
+
+        if (shape.type == OneShape.ShapeType.RECTANGLE) {
+            shape.rectangle.rotateDegres += 15.0;
+            repaint();
+            System.out.println("EDITED");
+        } else if (shape.type == OneShape.ShapeType.TRIANGLE) {
+            shape.triangle.rotateDegres += 15.0;
+            repaint();
+        }
+    }
+
+    /**
+     * Klasa do modyfikacji i tworzenia figur
+     */
     class MoveCreateAdapter extends MouseAdapter {
         private DrawingPanel dp;
         private int x;
         private int y;
 
-        /** Zmienna co pokazuje stan tworzenia kola */
+        /**
+         * Zmienna co pokazuje stan tworzenia kola
+         */
         private int ellNum;
-        /** Zmienna co pokazuje stan tworzenia prostokątą */
+        /**
+         * Zmienna co pokazuje stan tworzenia prostokątą
+         */
         private int rectNum;
-        /** Zmienna co pokazuje stan tworzenia trójkąta */
+        /**
+         * Zmienna co pokazuje stan tworzenia trójkąta
+         */
         private int trState;
-        /** Zmienna co chroni index ostatniego twożonego trójkąta */
+        /**
+         * Zmienna co chroni index ostatniego twożonego trójkąta
+         */
         private int trLast;
-        /** Zmienna co pokazuje index aktywnej figury */
+        /**
+         * Zmienna co pokazuje index aktywnej figury
+         */
         private int current;
 
         MoveCreateAdapter(DrawingPanel dp) {
@@ -162,7 +214,9 @@ public class DrawingPanel extends JPanel implements ActionListener{
             current = -1;
         }
 
-        /** Obsługa kliknięcia myszy */
+        /**
+         * Obsługa kliknięcia myszy
+         */
         @Override
         public void mousePressed(MouseEvent e) {
             if (dp.mode == 1 && e.getButton() == 1) {
@@ -232,14 +286,17 @@ public class DrawingPanel extends JPanel implements ActionListener{
                         default:
                             break;
                     }
-                } if (!isHit) current = -1;
+                }
+                if (!isHit) current = -1;
             }
 
             togglePopup(e);
 
         }
 
-        /**  Obsługa przesunięcia myszy */
+        /**
+         * Obsługa przesunięcia myszy
+         */
         @Override
         public void mouseDragged(MouseEvent e) {
             if (dp.mode == 1 && ellNum == 1) {
@@ -247,7 +304,7 @@ public class DrawingPanel extends JPanel implements ActionListener{
                 int dy = y - e.getY();
                 int result = Math.min(Math.abs(dx), Math.abs(dy));
                 if (dx != 0 && dy != 0) {
-                    shapes.get(shapeNum - 1).ellipse.setFrameFromDiagonal(x, y, x - result*Math.abs(dx)/(dx), y - result*Math.abs(dy)/(dy));
+                    shapes.get(shapeNum - 1).ellipse.setFrameFromDiagonal(x, y, x - result * Math.abs(dx) / (dx), y - result * Math.abs(dy) / (dy));
                     repaint();
                 }
             } else if (dp.mode == 2 && rectNum == 1) {
@@ -292,56 +349,63 @@ public class DrawingPanel extends JPanel implements ActionListener{
                 y = e.getY();
             }
         }
-        /** Obsługa odciśniecią myszy */
+
+        /**
+         * Obsługa odciśniecią myszy
+         */
         @Override
-        public void mouseReleased(MouseEvent e){
-            if(dp.mode == 1 && ellNum == 1){
+        public void mouseReleased(MouseEvent e) {
+            if (dp.mode == 1 && ellNum == 1) {
                 ellNum = 0;
-            } else if(dp.mode == 2 && rectNum == 1){
+            } else if (dp.mode == 2 && rectNum == 1) {
                 rectNum = 0;
-            } else if (dp.mode == 3 && trState == 1){
+            } else if (dp.mode == 3 && trState == 1) {
                 trState = 2;
             } else if (dp.mode == 3 && trState == 3) {
                 trState = 0;
-            } else if (dp.mode == 4){
+            } else if (dp.mode == 4) {
                 current = -1;
                 togglePopup(e);
             }
             togglePopup(e);
         }
 
-        /** Obsługa kliku muszy */
+        /**
+         * Obsługa kliku muszy
+         */
         public void mouseClicked(MouseEvent e) {
             togglePopup(e);
         }
 
-        /** Obsługa popupu z colorami */
-        private void togglePopup(MouseEvent e){
-            if(e.isPopupTrigger()){
+        /**
+         * Obsługa popupu z colorami
+         */
+        private void togglePopup(MouseEvent e) {
+            if (e.isPopupTrigger()) {
                 x = e.getX();
                 y = e.getY();
 
                 boolean isHit = false;
 
                 popup.selected = -1;
-                for(int i = 0; !isHit && i < shapeNum; i++){
+                for (int i = 0; !isHit && i < shapeNum; i++) {
                     switch (shapes.get(i).type) {
                         case CIRCLE:
-                            if(shapes.get(i).ellipse.isHit(x, y)){
+                            if (shapes.get(i).ellipse.isHit(x, y)) {
                                 popup.selected = i;
                                 isHit = true;
                             }
                             break;
 
                         case RECTANGLE:
-                            if(shapes.get(i).rectangle.isHit(x, y)){
+                            if (shapes.get(i).rectangle.isHit(x, y)) {
                                 popup.selected = i;
                                 isHit = true;
                             }
                             break;
 
                         case TRIANGLE:
-                            if(shapes.get(i).triangle.isHit(x, y)){
+                            if (shapes.get(i).triangle.isHit(x, y)) {
                                 popup.selected = i;
                                 isHit = true;
                             }
@@ -352,7 +416,7 @@ public class DrawingPanel extends JPanel implements ActionListener{
                     }
                 }
 
-                if(popup.selected != -1){
+                if (popup.selected != -1) {
                     popup.show(DrawingPanel.this, e.getX(), e.getY());
                     System.out.println("POpup");
                 }
@@ -361,96 +425,100 @@ public class DrawingPanel extends JPanel implements ActionListener{
 
     }
 
-    /** Klasa do obsługi scalowania myszką */
-    class ScalingAdapter implements MouseWheelListener{
+    /**
+     * Klasa do obsługi scalowania myszką
+     */
+    class ScalingAdapter implements MouseWheelListener {
 
         @Override
-        public void mouseWheelMoved(MouseWheelEvent e){
+        public void mouseWheelMoved(MouseWheelEvent e) {
             int x = e.getX();
             int y = e.getY();
+
             if (e.getScrollType() == MouseWheelEvent.WHEEL_UNIT_SCROLL) {
                 boolean isHit = false;
-                for (int i = 0; !isHit && i < shapeNum; i++){
-                    switch (shapes.get(i).type) {
-                        case CIRCLE:
-                            if(shapes.get(i).ellipse.isHit(x, y)){
-                                float amount =  e.getWheelRotation();
-                                shapes.get(i).ellipse.addHeight(amount);
-                                shapes.get(i).ellipse.addWidth(amount);
-                                repaint();
+                if (mode == 4) {
+                    for (int i = 0; !isHit && i <= shapeNum; i++) {
+                        switch (shapes.get(i).type) {
+                            case CIRCLE:
+                                if (shapes.get(i).ellipse.isHit(x, y)) {
+                                    float amount = e.getWheelRotation();
+                                    shapes.get(i).ellipse.addHeight(amount);
+                                    shapes.get(i).ellipse.addWidth(amount);
+                                    repaint();
+                                    isHit = true;
+                                }
+                                break;
+
+                            case RECTANGLE:
+                                if (shapes.get(i).rectangle.isHit(x, y)) {
+                                    float amount = e.getWheelRotation();
+                                    shapes.get(i).rectangle.addHeight(amount);
+                                    shapes.get(i).rectangle.addWidth(amount);
+                                    repaint();
+
+                                    isHit = true;
+                                }
+                                break;
+
+                            case TRIANGLE:
+                                if (shapes.get(i).triangle.isHit(x, y)) {
+                                    float amount = e.getWheelRotation();
+                                    shapes.get(i).triangle.changeSize(amount);
+                                    repaint();
+                                    isHit = true;
+                                }
+                                break;
+
+                            default:
+                                break;
+                        }
+                    }
+                } else if (mode == 5) {
+
+                    for (int i = 0; !isHit && i < shapeNum; i++) {
+                        switch (shapes.get(i).type) {
+                            case CIRCLE:
                                 isHit = true;
-                            }
-                            break;
-
-                        case RECTANGLE:
-                            if(shapes.get(i).rectangle.isHit(x, y)){
-                                float amount =  e.getWheelRotation();
-                                shapes.get(i).rectangle.addHeight(amount);
-                                shapes.get(i).rectangle.addWidth(amount);
-                                repaint();
-
-                                isHit = true;
-                            }
-                            break;
-
-                        case TRIANGLE:
-                            if(shapes.get(i).triangle.isHit(x, y)){
-                                float amount =  e.getWheelRotation();
-                                shapes.get(i).triangle.changeSize(amount);
-                                repaint();
-                                isHit = true;
-                            }
-                            break;
-
-                        default:
-                            break;
+                                break;
+                            case TRIANGLE:
+                                if (shapes.get(i).triangle.isHit(x, y)) {
+                                    System.out.println("Current: " + shapes.get(i));
+                                    rotateShape(shapes.get(i), i);
+                                    repaint();
+                                    isHit = true;
+                                }
+                                break;
+                            case RECTANGLE:
+                                if (shapes.get(i).rectangle.isHit(x, y)) {
+                                    System.out.println("Current: " + shapes.get(i));
+                                    rotateShape(shapes.get(i), i);
+                                    System.out.println("After changes: " + shapes.get(i));
+                                    repaint();
+                                    isHit = true;
+                                }
+                                break;
+                        }
                     }
                 }
             }
         }
     }
 
-    /** Obsługa przycisków menu */
-    public void actionPerformed(ActionEvent e){
-        if( e.getActionCommand().equals("Circle") ) {
+    /**
+     * Obsługa przycisków menu
+     */
+    public void actionPerformed(ActionEvent e) {
+        if (e.getActionCommand().equals("Circle")) {
             mode = 1;
-        } else if( e.getActionCommand().equals("Rectangle") ) {
+        } else if (e.getActionCommand().equals("Rectangle")) {
             mode = 2;
-        } else if( e.getActionCommand().equals("Triangle") ) {
+        } else if (e.getActionCommand().equals("Triangle")) {
             mode = 3;
-        } else if( e.getActionCommand().equals("Edit") ) {
+        } else if (e.getActionCommand().equals("Edit")) {
             mode = 4;
-        } else if(e.getActionCommand().equals("Zapisz")){
-            try {
-                int result = jFileChooser.showOpenDialog(null);
-                if (result == JFileChooser.APPROVE_OPTION) {
-                    path = jFileChooser.getSelectedFile().getName();
-                }
-                FileOutputStream fileOutputStream = new FileOutputStream(path);
-                ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-                objectOutputStream.writeObject(shapes);
-                objectOutputStream.flush();
-                objectOutputStream.close();
-                fileOutputStream.close();
-            } catch (Exception exp){
-                System.out.println(exp.toString());
-            }
-        } else if (e.getActionCommand().equals("Wczytaj")){
-            try {
-                int result = jFileChooser.showOpenDialog(null);
-                if(result == JFileChooser.APPROVE_OPTION){
-                    path = jFileChooser.getSelectedFile().getName();
-                }
-                FileInputStream fileInputStream = new FileInputStream(path);
-                ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-                shapes = (ArrayList<OneShape>)  (objectInputStream.readObject());
-                objectInputStream.close();
-                fileInputStream.close();
-                shapeNum = shapes.size();
-                repaint();
-            } catch (Exception exp) {
-                System.out.println(exp.toString());
-            }
+        } else if (e.getActionCommand().equals("Rotate")) {
+            mode = 5;
         }
     }
 
@@ -468,7 +536,7 @@ public class DrawingPanel extends JPanel implements ActionListener{
         }
 
         private void togglePopup(MouseEvent e) {
-            if(e.isPopupTrigger()){
+            if (e.isPopupTrigger()) {
                 popup.show(DrawingPanel.this, e.getX(), e.getY());
                 System.out.println("POpup");
             }

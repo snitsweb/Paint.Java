@@ -20,8 +20,7 @@ public class main extends JFrame{
     private void initUI() {
         DrawingPanel dp = new DrawingPanel();
         JMenuBar menuBar = new JMenuBar();
-        JMenuItem save = new JMenuItem("Zapisz");
-        JMenuItem load = new JMenuItem("Wczytaj");
+        JMenuItem rotate = new JMenuItem("Rotate");
         JMenuItem rectangle = new JMenuItem("Rectangle");
         JMenuItem circle = new JMenuItem("Circle");
         JMenuItem triangle = new JMenuItem("Triangle");
@@ -31,16 +30,14 @@ public class main extends JFrame{
         menuBar.add(circle);
         menuBar.add(triangle);
         menuBar.add(edit);
-        menuBar.add(save);
-        menuBar.add(load);
+        menuBar.add(rotate);
         setJMenuBar(menuBar);
 
         circle.addActionListener(dp);
         rectangle.addActionListener(dp);
         triangle.addActionListener(dp);
         edit.addActionListener(dp);
-        save.addActionListener(dp);
-        load.addActionListener(dp);
+        rotate.addActionListener(dp);
 
         add(dp);
         setTitle("Main");

@@ -13,6 +13,7 @@ public class OneTriangle implements Serializable{
 
     /** Zmienna z kolorem */
     public Color color;
+    public int rotateDegres = 0;
 
     /** Zmienna, co wkazuje na szubkość modyfikacji figury */
     private double SCALE = 0.1;

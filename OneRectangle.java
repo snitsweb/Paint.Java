@@ -1,5 +1,5 @@
-import java.awt.Color;
-import java.awt.geom.Rectangle2D;
+import java.awt.*;
+import java.awt.geom.*;
 
 
 /** Klasa do tworzenia prostokąta */
@@ -7,6 +7,7 @@ import java.awt.geom.Rectangle2D;
 
     /** Zmienna z kolorem */
     public Color color;
+    public int rotateDegres = 0;
 
     /** Zmienna, co wkazuje na szubkość modyfikacji figury */
     private double SCALE = 0.1;
